@@ -126,7 +126,7 @@
                   </td>
                   <td>{{ ops.customer(d.customer_id) }}</td>
                   <td>{{ d.address }}</td>
-                  <td>{{ d.scheduled_at | date: 'dd/MM/yyyy HH:mm' : '+0300' }}</td>
+                  <td>{{ d.scheduled_at | athensDate: 'dd/MM/yyyy HH:mm' }}</td>
                   <td><app-status-badge [status]="d.status" /></td>
                   <td><app-status-badge [status]="d.payment_status" /></td>
                 </tr>
@@ -158,7 +158,7 @@
             </div>
             <div>
               <dt>Προγραμματισμένη άφιξη</dt>
-              <dd>{{ d.scheduled_at | date: 'dd/MM/yyyy HH:mm' : '+0300' }}</dd>
+              <dd>{{ d.scheduled_at | athensDate: 'dd/MM/yyyy HH:mm' }}</dd>
             </div>
             <div>
               <dt>Όχημα / Οδηγός</dt>
@@ -246,14 +246,14 @@
     @case ('calendar') {
       <section class="panel">
         <header class="panel-header">
-          <h2>Σάββατο, 3 Οκτωβρίου 2026</h2>
+          <h2>{{ ops.today() | date: 'EEEE, d MMMM yyyy' : undefined : 'el' }}</h2>
           <span class="badge amber">Ημερήσια προεπισκόπηση</span>
         </header>
         @for (event of ops.todayEvents(); track event.id) {
           <div class="calendar-preview-row">
             <time
-              >{{ event.starts_at | date: 'HH:mm' : '+0300' }} –
-              {{ event.ends_at | date: 'HH:mm' : '+0300' }}</time
+              >{{ event.starts_at | athensDate: 'HH:mm' }} –
+              {{ event.ends_at | athensDate: 'HH:mm' }}</time
             >
             <div>
               <h3>{{ event.title }}</h3>
@@ -372,10 +372,110 @@
               <p>
                 <strong>{{ ops.employee(a.created_by) }}</strong> {{ a.action }}
               </p>
-              <small>{{ a.created_at | date: 'dd/MM/yyyy HH:mm' : '+0300' }}</small>
+              <small>{{ a.created_at | athensDate: 'dd/MM/yyyy HH:mm' }}</small>
             </div>
           </div>
         }
+      </section>
+    }
+    @case ('suppliers') {
+      <section class="panel">
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>ΠΡΟΜΗΘΕΥΤΗΣ</th>
+                <th>ΕΚΠΡΟΣΩΠΟΣ</th>
+                <th>ΤΗΛΕΦΩΝΟ</th>
+                <th>ΔΙΕΥΘΥΝΣΗ</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (s of filtered(ops.repository.suppliers()); track s.id) {
+                <tr>
+                  <td>{{ s.name }}</td>
+                  <td>{{ s.representative }}</td>
+                  <td>{{ s.phone }}</td>
+                  <td>{{ s.address }}</td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="4">Δεν υπάρχουν προμηθευτές.</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </section>
+    }
+    @case ('stock-movements') {
+      <section class="panel">
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>ΑΡΙΘΜΟΣ</th>
+                <th>ΚΙΝΗΣΗ</th>
+                <th>ΠΡΟΪΟΝ</th>
+                <th>ΠΟΣΟΤΗΤΑ</th>
+                <th>ΑΠΟ → ΠΡΟΣ</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (m of filtered(ops.repository.stockMovements()); track m.id) {
+                <tr>
+                  <td>{{ m.number }}</td>
+                  <td>
+                    {{
+                      m.type === 'in'
+                        ? 'Είσοδος'
+                        : m.type === 'out'
+                          ? 'Έξοδος'
+                          : m.type === 'transfer'
+                            ? 'Μεταφορά'
+                            : 'Διόρθωση'
+                    }}
+                  </td>
+                  <td>{{ productName(m.product_id) }}</td>
+                  <td>{{ m.quantity }}</td>
+                  <td>{{ m.from_location }} → {{ m.to_location }}</td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="5">Δεν υπάρχουν κινήσεις αποθέματος.</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </section>
+    }
+    @case ('documents') {
+      <section class="panel">
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>ΕΓΓΡΑΦΟ</th>
+                <th>ΤΥΠΟΣ</th>
+                <th>ΗΜΕΡΟΜΗΝΙΑ</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (d of filtered(ops.repository.documents()); track d.id) {
+                <tr>
+                  <td>{{ d.name }}</td>
+                  <td>{{ d.mime_type }}</td>
+                  <td>{{ d.created_at | date: 'dd/MM/yyyy' }}</td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="3">Δεν υπάρχουν έγγραφα.</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
       </section>
     }
     @case ('settings') {
@@ -392,11 +492,11 @@
           </div>
           <div>
             <dt>Δεδομένα</dt>
-            <dd>Δοκιμαστικό repository στη μνήμη</dd>
+            <dd>Supabase · αποθήκευση στη βάση δεδομένων</dd>
           </div>
           <div>
             <dt>Χρήστες & δικαιώματα</dt>
-            <dd>Θα ενεργοποιηθούν με Supabase Auth και RLS.</dd>
+            <dd>Supabase Auth · Πρόσβαση μόνο σε συνδεδεμένο προσωπικό.</dd>
           </div>
         </dl>
       </section>

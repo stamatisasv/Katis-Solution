@@ -1,63 +1,105 @@
-# Supabase database setup
+# Supabase setup and live login
 
-Open your Supabase project's **SQL Editor → New query**, paste each script, and run
-them in this order:
+The Angular app now uses `SupabaseOperationsRepository` in production. Staff sign
+in at `/login` with their existing Supabase Auth email/password. The SDK persists
+and refreshes the session; protected routes require a linked staff profile.
+Signing out clears loaded business data and returns to login.
 
-1. `01_schema.sql`: run once to create 14 tables, relations, constraints, indexes,
-   update timestamps, and access policies. Intended for a fresh database; if a
-   table already exists, the transaction fails without replacing it.
-2. `02_demo_data.sql`: optionally import the fictional Greek demo records with
-   multiple rows per INSERT. Repeatable: existing record IDs are skipped. The
-   extra supplier, stock movement, and payment records fix missing relationships
-   in the app's mock data. Document metadata stays empty until real files exist.
-3. `03_bulk_import_example.sql`: a template for importing several actual customers
-   at once. Replace its example values first. Re-running creates additional rows.
+## Existing database: run these two scripts
 
-The scripts are provided for you to run; they have not been applied to the remote
-Supabase project.
+Open **Supabase → SQL Editor → New query** and run:
 
-## Give staff access
+1. `04_live_operations.sql`: installs the atomic create/edit functions used by
+   the app. Delivery edits synchronize linked payments and calendar events in the
+   same transaction. Payment edits synchronize the delivery payment status. Every
+   successful create/edit adds an activity entry. Repeatable.
+2. `05_link_admin.sql`: links your single existing Auth account to the existing
+   unlinked admin profile (or creates one if needed). Repeatable. It stops if there
+   are multiple Auth accounts; use its email-specific alternative in that case.
 
-Anonymous visitors cannot access any business table. Signed-in users need a
-profile linked to their Supabase Auth account. All linked staff share read/write
-access to business records; profiles are read-only through the browser API and
-managed in the SQL Editor. The `role` field does not currently differentiate
-business permissions between admins and employees.
+These new scripts have been validated locally but have **not** been applied to
+the remote Supabase project. The browser publishable key cannot run database DDL
+or manage Auth accounts. Do not put a service-role key in the Angular app.
 
-After importing the demo, create your user under **Authentication → Users**, copy
-its Auth UUID, and run this in the SQL Editor, replacing the placeholder:
+After running them, open `/login`, enter the email/password you created in
+Supabase Auth, and sign in. If already signed in without a linked profile, use
+**Επανέλεγχος πρόσβασης** after running `05_link_admin.sql`.
+
+## New database only
+
+1. Run `01_schema.sql` once: creates 14 tables, relationships, constraints,
+   indexes, timestamp triggers, and row-level access policies. Existing tables
+   cause a safe transaction failure; this does not replace them.
+2. Optionally run `02_demo_data.sql`: inserts 48 fictional demo records with fixed
+   IDs. Existing IDs are skipped. Demo dates are 3 October 2026.
+3. Run `04_live_operations.sql` and `05_link_admin.sql` as above.
+
+`03_bulk_import_example.sql` is a multi-row customer import template. Replace its
+values with actual data first. Running it twice creates additional customers.
+
+## Staff access
+
+Anonymous visitors and Auth users without a linked profile cannot access business
+records. All linked staff share read/write access. Profiles are read-only through
+the browser API and provisioned in the SQL Editor. The admin/employee role is
+displayed in the UI; it does not currently differentiate business permissions.
+
+To add another staff account, create it in **Authentication → Users**, then link
+its Auth UUID in the SQL Editor:
+
+```sql
+insert into public.profiles (user_id, name, role)
+values ('YOUR_AUTH_USER_UUID'::uuid, 'Employee name', 'employee');
+```
+
+To link an existing employee instead:
 
 ```sql
 update public.profiles
 set user_id = 'YOUR_AUTH_USER_UUID'::uuid
-where id = '00000000-0000-4000-8000-000000000001';
+where id = 'EXISTING_PROFILE_UUID'::uuid;
 ```
 
-Without demo data, provision your profile directly instead:
+The profile ID identifies the employee/driver in business records. `user_id`
+links that profile to Supabase Auth. API-created records automatically use the
+current profile as `created_by`; new tasks default to that employee.
 
-```sql
-insert into public.profiles (user_id, name, role)
-values ('YOUR_AUTH_USER_UUID'::uuid, 'Σταμάτης Κατής', 'admin');
-```
+## Live data behavior
 
-Profile IDs identify employees/drivers in business tables. `user_id` links an
-employee to Auth; demo employees have no Auth account until you link them.
-`created_by` defaults to the current linked profile for API inserts. Imports from
-the SQL Editor may have a null creator, or you can explicitly supply a profile ID.
+- All 14 tables load after staff verification, including suppliers, stock movement
+  history, and document metadata. Reads are paginated so large tables are not
+  silently cut off by PostgREST's row limit.
+- Existing editors persist deliveries, tasks, products, customers, payments,
+  notes, and calendar events. Quick create persists tasks and notes.
+- Refresh after a successful save updates related screens. A failed reload is
+  shown separately; a committed save is not reported as failed.
+- A loading/retry state replaces silent failures. The app never falls back to
+  mock data in production. Mock repositories are used only in isolated UI tests.
+- Dashboard dates use the current date in Europe/Athens, including winter/summer
+  time handling in date editors. Old demo deliveries will not appear as today's
+  deliveries once the date changes.
+- The refresh button reloads server data. Changes by other users are not pushed
+  automatically through Realtime.
 
-## Application integration
+The existing feature scope is preserved: suppliers, stock movement history, and
+document metadata have live read views. New delivery/customer/payment/product
+forms, stock movement creation, and document uploads are separate workflows that
+are not implemented yet. Stock history does not automatically change product
+quantities. Supabase Storage buckets and upload/download policies need separate
+setup before file handling is enabled.
 
-The Angular app still uses `MockOperationsRepository`. Running SQL alone will
-not switch the screens to database data. The next step is implementing a Supabase
-repository and sign-in flow. Table names use snake_case, including
-`delivery_items`, `stock_movements`, `calendar_events`, and `activity_logs`.
+## Verify with your actual account
 
-Stock movements are history records; inserting one does not automatically change
-`products.quantity`. Repository code or transactional database functions must
-manage stock and linked delivery/payment/calendar changes. Delivery numbers and
-stock movement numbers must be supplied by the caller and are unique.
+1. Sign in and confirm your name and role in the top bar.
+2. Verify customers/deliveries match your Supabase tables.
+3. Create a task and a note, then reload the browser: both should remain.
+4. Change a delivery payment status and verify the Finance page, calendar, and
+   Activity page update together.
+5. Sign out and open `/deliveries`: you should return to `/login`.
 
-`documents` stores metadata only. Storage buckets, uploads, and Storage access
-policies require separate setup.
+`npm test -- --watch=false` runs the local route, session, date, repository, and
+existing workflow tests. Database functions have also been exercised locally in
+PostgreSQL-compatible PGlite with RLS and atomic rollback checks. A real account
+sign-in/write test still requires your own login and the two new SQL scripts.
 
-Access policy design follows the [Supabase RLS documentation](https://supabase.com/docs/guides/database/postgres/row-level-security).
+Access policies follow the [Supabase RLS documentation](https://supabase.com/docs/guides/database/postgres/row-level-security).

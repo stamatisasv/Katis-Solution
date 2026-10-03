@@ -1,4 +1,4 @@
-<div class="modal-overlay" (click)="closed.emit()">
+<div class="modal-overlay" (click)="!busy() && closed.emit()">
   <section
     class="form-modal"
     role="dialog"
@@ -12,7 +12,13 @@
         <span class="eyebrow">ΓΡΗΓΟΡΗ ΚΑΤΑΧΩΡΙΣΗ</span>
         <h2 id="modal-title">{{ kind() === 'task' ? 'Νέα εργασία' : 'Νέα σημείωση' }}</h2>
       </div>
-      <button type="button" class="icon-button" aria-label="Κλείσιμο" (click)="closed.emit()">
+      <button
+        type="button"
+        class="icon-button"
+        aria-label="Κλείσιμο"
+        [disabled]="busy()"
+        (click)="closed.emit()"
+      >
         <app-icon name="close" />
       </button>
     </header>
@@ -46,12 +52,13 @@
           <small class="error-text">Επιλέξτε προθεσμία.</small>
         }
       }
-      <p class="muted small">Δοκιμαστική καταχώριση · Διατηρείται μόνο στην τρέχουσα συνεδρία.</p>
+      <p class="muted small">Η καταχώριση αποθηκεύεται στη βάση δεδομένων.</p>
       @if (error()) {
         <p role="alert" class="error-text">{{ error() }}</p>
       }
       <footer>
-        <button type="button" class="button secondary" (click)="closed.emit()">Ακύρωση</button
+        <button type="button" class="button secondary" [disabled]="busy()" (click)="closed.emit()">
+          Ακύρωση</button
         ><button class="button primary" type="submit" [disabled]="busy()">
           {{ busy() ? 'Αποθήκευση…' : 'Αποθήκευση' }}
         </button>

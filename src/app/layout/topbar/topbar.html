@@ -26,6 +26,15 @@
     }
   </div>
   <div class="topbar-actions">
+    <button
+      class="button secondary"
+      type="button"
+      [disabled]="ops.repository.loading()"
+      (click)="ops.repository.refresh()"
+      aria-label="Ανανέωση δεδομένων"
+    >
+      Ανανέωση
+    </button>
     <div class="popover-anchor">
       <button
         class="icon-button global-create"
@@ -60,7 +69,9 @@
           <h3>Χρειάζονται την προσοχή σας</h3>
           <a routerLink="/deliveries" (click)="dismiss()"
             ><app-icon name="truck" /><span
-              >Η παράδοση #1042 είναι σε διαδρομή<small>Μύρινα · Φορτηγό 02</small></span
+              >{{ ops.repository.deliveries().length }} παραδόσεις<small
+                >Δείτε την κατάσταση παραδόσεων</small
+              ></span
             ></a
           ><a routerLink="/inventory" (click)="dismiss()"
             ><app-icon name="warning" /><span
@@ -86,13 +97,23 @@
         [attr.aria-expanded]="profile()"
       >
         <span class="avatar">ΣΚ</span
-        ><span class="user-copy"><strong>Σταμάτης Κατής</strong><small>Διαχειριστής</small></span
+        ><span class="user-copy"
+          ><strong>{{ auth.name() }}</strong
+          ><small>{{
+            auth.profile()?.role === 'admin' ? 'Διαχειριστής' : 'Υπάλληλος'
+          }}</small></span
         ><app-icon name="down" />
       </button>
       @if (profile()) {
         <div class="popover">
-          <h3>Δοκιμαστικό προφίλ</h3>
-          <p class="muted small">Η σύνδεση χρηστών θα προστεθεί με το Supabase Auth.</p>
+          <h3>{{ auth.name() }}</h3>
+          <p class="muted small">{{ auth.session()?.user?.email }}</p>
+          <button (click)="signOut()" [disabled]="signingOut()">
+            {{ signingOut() ? 'Αποσύνδεση…' : 'Αποσύνδεση' }}
+          </button>
+          @if (signOutError()) {
+            <p class="error-text" role="alert">{{ signOutError() }}</p>
+          }
           <a routerLink="/settings" (click)="dismiss()"
             >Ρυθμίσεις εφαρμογής <app-icon name="settings"
           /></a>

@@ -11,11 +11,12 @@ import {
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { OPERATIONS_REPOSITORY } from '../../core/services/operations.repository';
 import { Icon } from './icon';
+import { businessDate } from '../../core/services/business-date';
 @Component({
   selector: 'app-quick-create',
   imports: [ReactiveFormsModule, Icon],
   templateUrl: './quick-create.html',
-  host: { '(document:keydown.escape)': 'closed.emit()' },
+  host: { '(document:keydown.escape)': '!busy() && closed.emit()' },
 })
 export class QuickCreate {
   readonly kind = input.required<'task' | 'note'>();
@@ -37,12 +38,17 @@ export class QuickCreate {
       ],
     }),
     description: new FormControl('', { nonNullable: true }),
-    dueDate: new FormControl('2026-10-03', { nonNullable: true, validators: Validators.required }),
+    dueDate: new FormControl(businessDate(), {
+      nonNullable: true,
+      validators: Validators.required,
+    }),
   });
   constructor() {
     effect(() => this.titleField()?.nativeElement.focus());
   }
   async submit() {
+    if (this.busy()) return;
+    this.error.set('');
     this.submitted.set(true);
     if (this.form.invalid) {
       this.form.markAllAsTouched();
@@ -58,8 +64,10 @@ export class QuickCreate {
         this.kind() === 'task' ? 'Η εργασία δημιουργήθηκε.' : 'Η σημείωση αποθηκεύτηκε.',
       );
       this.closed.emit();
-    } catch {
-      this.error.set('Η αποθήκευση απέτυχε. Δοκιμάστε ξανά.');
+    } catch (error) {
+      this.error.set(
+        error instanceof Error ? error.message : 'Η αποθήκευση απέτυχε. Δοκιμάστε ξανά.',
+      );
     } finally {
       this.busy.set(false);
     }

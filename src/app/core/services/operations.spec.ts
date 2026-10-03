@@ -11,6 +11,7 @@ describe('Mock operations', () => {
     });
     repository = TestBed.inject(MockOperationsRepository);
     operations = TestBed.inject(OperationsService);
+    operations.today.set('2026-10-03');
   });
   it('derives dashboard figures from related records', () => {
     expect(operations.todayDeliveries().length).toBe(4);

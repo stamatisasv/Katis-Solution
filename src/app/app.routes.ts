@@ -1,9 +1,17 @@
 import { Routes } from '@angular/router';
+import { authGuard } from './core/services/auth.guard';
 import { NAV_GROUPS } from './core/services/app-settings';
 const preview = () => import('./features/feature-preview').then((m) => m.FeaturePreview);
 export const routes: Routes = [
   {
+    path: 'login',
+    title: 'Σύνδεση · Katis Operations',
+    loadComponent: () => import('./features/login/login').then((m) => m.Login),
+  },
+  {
     path: '',
+    canActivate: [authGuard],
+    canActivateChild: [authGuard],
     loadComponent: () => import('./layout/app-shell/app-shell').then((m) => m.AppShell),
     children: [
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },

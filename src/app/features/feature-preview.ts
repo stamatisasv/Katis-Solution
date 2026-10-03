@@ -1,3 +1,4 @@
+import { AthensDatePipe } from '../shared/components/athens-date.pipe';
 import {
   Component,
   computed,
@@ -17,10 +18,20 @@ import { StatusBadge } from '../shared/components/status-badge';
 import { Icon } from '../shared/components/icon';
 import { RecordEditor, EditorRecord, EditorField } from '../shared/components/record-editor';
 import { EditableKind } from '../core/services/operations.repository';
+import { athensDateTime } from '../core/services/business-date';
 import { BaseRecord } from '../core/models/entities';
 @Component({
   selector: 'app-feature-preview',
-  imports: [RecordEditor, PageHeader, StatusBadge, Icon, RouterLink, CurrencyPipe, DatePipe],
+  imports: [
+    AthensDatePipe,
+    RecordEditor,
+    PageHeader,
+    StatusBadge,
+    Icon,
+    RouterLink,
+    CurrencyPipe,
+    DatePipe,
+  ],
   templateUrl: './feature-preview.html',
 })
 export class FeaturePreview {
@@ -47,6 +58,12 @@ export class FeaturePreview {
         return repo.products();
       case 'customers':
         return repo.customers();
+      case 'suppliers':
+        return repo.suppliers();
+      case 'stock-movements':
+        return repo.stockMovements();
+      case 'documents':
+        return repo.documents();
       case 'finance':
         return repo.transactions();
       case 'notes':
@@ -71,6 +88,9 @@ export class FeaturePreview {
         normalize(Object.values(data).join(' ') + ' ' + customer + ' ' + employee).includes(query)
       );
     });
+  }
+  productName(id: string) {
+    return this.ops.repository.products().find((product) => product.id === id)?.name ?? '—';
   }
   statusLabel(status: string): string {
     return (
@@ -115,11 +135,11 @@ export class FeaturePreview {
     finance: 'Παρακολούθηση και ενημέρωση πληρωμών.',
     notes: 'Δημιουργία, επεξεργασία και καρφίτσωμα σημειώσεων.',
     calendar: 'Ημερήσιο πρόγραμμα. Οι ώρες παραδόσεων αλλάζουν από την αντίστοιχη παράδοση.',
-    suppliers: 'Κατάλογος προμηθευτών, επαφές και στοιχεία συνεργασίας · Υπό κατασκευή.',
-    'stock-movements': 'Παραλαβές, έξοδοι και μεταφορές αποθέματος · Υπό κατασκευή.',
-    documents: 'Αρχεία και έγγραφα συνδεδεμένα με τις εγγραφές · Υπό κατασκευή.',
+    suppliers: 'Κατάλογος προμηθευτών, επαφές και στοιχεία συνεργασίας.',
+    'stock-movements': 'Παραλαβές, έξοδοι και μεταφορές αποθέματος.',
+    documents: 'Αρχεία και έγγραφα συνδεδεμένα με τις εγγραφές.',
     activity: 'Ιστορικό ενεργειών και αλλαγών.',
-    settings: 'Πληροφορίες του δοκιμαστικού περιβάλλοντος.',
+    settings: 'Πληροφορίες της εφαρμογής και της σύνδεσης.',
   };
   edit(kind: EditableKind, row: BaseRecord, title: string) {
     const options = (values: string[], labels: string[]) =>
@@ -250,8 +270,7 @@ export class FeaturePreview {
     const values = { ...row } as unknown as Record<string, unknown>;
     for (const f of fields[kind])
       if (f.type === 'datetime-local') {
-        const date = new Date(String(values[f.key]));
-        values[f.key] = new Date(date.getTime() + 3 * 3600000).toISOString().slice(0, 16);
+        values[f.key] = athensDateTime(String(values[f.key]));
       }
     this.trigger = document.activeElement as HTMLElement;
     this.message.set('');

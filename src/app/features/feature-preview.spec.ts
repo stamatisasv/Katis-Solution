@@ -1,3 +1,6 @@
+import { signal } from '@angular/core';
+import { AuthService } from '../core/services/auth.service';
+import { OPERATIONS_REPOSITORY } from '../core/services/operations.repository';
 import { TestBed } from '@angular/core/testing';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { provideRouter } from '@angular/router';
@@ -18,7 +21,23 @@ describe('Page workflows', () => {
         removeEventListener: vi.fn(),
       })),
     });
-    TestBed.configureTestingModule({ providers: [...appConfig.providers, provideRouter(routes)] });
+    TestBed.configureTestingModule({
+      providers: [
+        ...appConfig.providers,
+        provideRouter(routes),
+        { provide: OPERATIONS_REPOSITORY, useExisting: MockOperationsRepository },
+        {
+          provide: AuthService,
+          useValue: {
+            ready: Promise.resolve(),
+            session: signal({ user: { id: 'admin', email: 'admin@example.com' } }),
+            profile: signal({ id: 'admin', role: 'admin' }),
+            signedIn: () => true,
+            name: () => 'Σταμάτης Κατής',
+          },
+        },
+      ],
+    });
   });
   it('renders every destination and missing delivery without crashing', async () => {
     const harness = await RouterTestingHarness.create();

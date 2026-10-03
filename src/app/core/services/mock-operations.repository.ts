@@ -12,6 +12,9 @@ import {
   Task,
   Transaction,
   Vehicle,
+  Supplier,
+  StockMovement,
+  Document,
 } from '../models/entities';
 import {
   EditableKind,
@@ -29,6 +32,12 @@ const base = (n: number): BaseRecord => ({
 });
 @Injectable({ providedIn: 'root' })
 export class MockOperationsRepository implements OperationsRepository {
+  readonly loading = signal(false);
+  readonly error = signal('');
+  async refresh(): Promise<void> {}
+  readonly suppliers = signal<readonly Supplier[]>([]);
+  readonly stockMovements = signal<readonly StockMovement[]>([]);
+  readonly documents = signal<readonly Document[]>([]);
   readonly profiles = signal<readonly Profile[]>([
     { ...base(1), name: 'Σταμάτης Κατής', role: 'admin' },
     { ...base(2), name: 'Δημήτρης Κατής', role: 'employee' },

@@ -10,6 +10,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { athensDateTimeToIso } from '../../core/services/business-date';
 import { EditableKind, OPERATIONS_REPOSITORY } from '../../core/services/operations.repository';
 
 export interface EditorField {
@@ -76,7 +77,7 @@ export interface EditorRecord {
             <small class="error-text">Συμπληρώστε έγκυρη τιμή για {{ field.label }}.</small>
           }
         }
-        <p class="muted small">Οι αλλαγές διατηρούνται μόνο στην τρέχουσα συνεδρία.</p>
+        <p class="muted small">Οι αλλαγές αποθηκεύονται στη βάση δεδομένων.</p>
         @if (error()) {
           <p class="error-text" role="alert">{{ error() }}</p>
         }
@@ -154,7 +155,8 @@ export class RecordEditor implements OnInit {
       const changes = this.form.getRawValue();
       for (const field of this.record().fields) {
         if (typeof changes[field.key] === 'string') changes[field.key] = changes[field.key].trim();
-        if (field.type === 'datetime-local') changes[field.key] += ':00+03:00';
+        if (field.type === 'datetime-local')
+          changes[field.key] = athensDateTimeToIso(changes[field.key]);
       }
       await this.repository.updateRecord(this.record().kind, this.record().id, changes);
       this.saved.emit();

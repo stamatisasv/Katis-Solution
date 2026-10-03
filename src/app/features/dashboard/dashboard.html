@@ -5,19 +5,23 @@
   </div>
   <button (click)="quick.open('task')">
     <app-icon name="check" />Νέα εργασία<app-icon name="plus" /></button
-  ><a routerLink="/deliveries"><app-icon name="truck" />Νέα παράδοση<app-icon name="chevron" /></a
+  ><a routerLink="/deliveries"><app-icon name="truck" />Παραδόσεις<app-icon name="chevron" /></a
   ><a routerLink="/stock-movements"
     ><app-icon name="arrows" />Κίνηση αποθέματος<app-icon name="chevron" /></a
-  ><a routerLink="/finance"><app-icon name="wallet" />Νέα πληρωμή<app-icon name="chevron" /></a
+  ><a routerLink="/finance"><app-icon name="wallet" />Πληρωμές<app-icon name="chevron" /></a
   ><button (click)="quick.open('note')">
     <app-icon name="note" />Νέα σημείωση<app-icon name="plus" /></button
-  ><a routerLink="/customers"><app-icon name="users" />Νέος πελάτης<app-icon name="chevron" /></a>
+  ><a routerLink="/customers"><app-icon name="users" />Πελάτες<app-icon name="chevron" /></a>
 </section>
 
 <app-page-header
-  title="Καλημέρα, Σταμάτη"
+  [title]="'Καλημέρα, ' + auth.name()"
   subtitle="Όλα όσα χρειάζεται να γνωρίζεις για τη σημερινή ημέρα."
-  ><div class="date-chip"><app-icon name="calendar" /><span>Σάββατο, 3 Οκτωβρίου 2026</span></div>
+  ><div class="date-chip">
+    <app-icon name="calendar" /><span>{{
+      ops.today() | date: 'EEEE, d MMMM yyyy' : undefined : 'el'
+    }}</span>
+  </div>
   <div class="popover-anchor">
     <button
       class="button primary"
@@ -33,7 +37,7 @@
         ><button (click)="quick.open('note'); newMenu.set(false)">
           <app-icon name="note" />Νέα σημείωση</button
         ><a routerLink="/deliveries" (click)="newMenu.set(false)"
-          ><app-icon name="truck" />Παραδόσεις <small>Επόμενη φάση</small></a
+          ><app-icon name="truck" />Παραδόσεις</a
         >
       </div>
     }
@@ -42,7 +46,7 @@
 <div class="day-strip">
   <span class="online-dot"></span><strong>Η επιχείρηση σήμερα</strong
   ><span>Μια καθαρή εικόνα. Καλύτερος συντονισμός.</span
-  ><span class="demo-label">Δοκιμαστικά δεδομένα</span>
+  ><span class="demo-label">Δεδομένα επιχείρησης</span>
 </div>
 <section class="stats-grid" aria-label="Σύνοψη ημέρας">
   <app-stat-card
@@ -91,7 +95,7 @@
         <a
           class="schedule-row"
           [routerLink]="event.delivery_id ? '/deliveries/' + event.delivery_id : '/calendar'"
-          ><time>{{ event.starts_at | date: 'HH:mm' : '+0300' }}</time
+          ><time>{{ event.starts_at | athensDate: 'HH:mm' }}</time
           ><span class="timeline-marker" [class]="'timeline-marker ' + event.type"></span
           ><span class="event-icon" [class]="'event-icon ' + event.type"
             ><app-icon [name]="eventIcon(event.type)" /></span
@@ -131,8 +135,8 @@
           ><a routerLink="/tasks" class="task-copy"
             ><strong>{{ task.title }}</strong
             ><small
-              ><span [class.red-text]="task.due_date < '2026-10-03'">{{
-                task.due_date < '2026-10-03' ? 'Εκπρόθεσμη · Χθες' : 'Σήμερα'
+              ><span [class.red-text]="task.due_date < ops.today()">{{
+                task.due_date < ops.today() ? 'Εκπρόθεσμη' : task.due_date
               }}</span
               ><span>·</span>{{ ops.employee(task.employee_id).split(' ')[0] }}</small
             ></a
@@ -187,7 +191,7 @@
               ><small class="table-subtext">{{ ops.items(delivery.id) }}</small>
             </td>
             <td>{{ delivery.address.split(',')[0] }}<small class="table-subtext">Λήμνος</small></td>
-            <td class="time-cell">{{ delivery.scheduled_at | date: 'HH:mm' : '+0300' }}</td>
+            <td class="time-cell">{{ delivery.scheduled_at | athensDate: 'HH:mm' }}</td>
             <td>
               {{ ops.vehicle(delivery.vehicle_id)
               }}<small class="table-subtext">{{
@@ -214,7 +218,7 @@
       <a class="mobile-delivery-card" [routerLink]="'/deliveries/' + delivery.id">
         <div class="mobile-delivery-heading">
           <strong>#{{ delivery.number }}</strong
-          ><time>{{ delivery.scheduled_at | date: 'HH:mm' : '+0300' }}</time
+          ><time>{{ delivery.scheduled_at | athensDate: 'HH:mm' }}</time
           ><app-icon name="chevron" />
         </div>
         <h3>{{ ops.customer(delivery.customer_id) }}</h3>
@@ -266,8 +270,8 @@
               {{ activity.action }}
             </p>
             <small
-              >{{ activity.created_at | date: 'HH:mm' : '+0300' }} ·
-              {{ activity.created_at | date: 'dd/MM' : '+0300' }}</small
+              >{{ activity.created_at | athensDate: 'HH:mm' }} ·
+              {{ activity.created_at | athensDate: 'dd/MM' }}</small
             >
           </div>
         </div>
@@ -289,7 +293,7 @@
           <p>{{ note.body }}</p>
           <small
             >{{ ops.employee(note.created_by).split(' ')[0] }} ·
-            {{ note.created_at | date: 'dd/MM' : '+0300' }}</small
+            {{ note.created_at | athensDate: 'dd/MM' }}</small
           >
         </article>
       }

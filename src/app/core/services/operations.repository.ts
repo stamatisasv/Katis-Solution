@@ -11,6 +11,9 @@ import {
   Task,
   Transaction,
   Vehicle,
+  Supplier,
+  StockMovement,
+  Document,
 } from '../models/entities';
 export interface EditableRecords {
   delivery: Delivery;
@@ -26,6 +29,12 @@ export type RecordChanges<K extends EditableKind> = Partial<
   Omit<EditableRecords[K], keyof import('../models/entities').BaseRecord | 'number'>
 >;
 export interface OperationsRepository {
+  readonly loading: Signal<boolean>;
+  readonly error: Signal<string>;
+  refresh(): Promise<void>;
+  readonly suppliers: Signal<readonly Supplier[]>;
+  readonly stockMovements: Signal<readonly StockMovement[]>;
+  readonly documents: Signal<readonly Document[]>;
   readonly profiles: Signal<readonly Profile[]>;
   readonly customers: Signal<readonly Customer[]>;
   readonly deliveries: Signal<readonly Delivery[]>;

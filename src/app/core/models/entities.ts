@@ -3,7 +3,7 @@ export interface BaseRecord {
   id: UUID;
   created_at: string;
   updated_at: string;
-  created_by: UUID;
+  created_by: UUID | null;
 }
 export interface Profile extends BaseRecord {
   name: string;

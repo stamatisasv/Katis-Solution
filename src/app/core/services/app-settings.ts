@@ -3,7 +3,6 @@ export const APP_SETTINGS = {
   subtitle: 'Business Management System',
   company: 'Κατής Δημήτριος & Σία Ο.Ε.',
   location: 'Λιβαδοχώρι, Λήμνος',
-  demoDate: '2026-10-03',
 } as const;
 export const NAV_GROUPS = [
   {
