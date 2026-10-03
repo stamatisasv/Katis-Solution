@@ -2155,3 +2155,83 @@ tbody tr:hover {
     margin-left: 52px;
   }
 }
+
+.row-edit {
+  display: flex;
+  margin-top: 8px;
+  min-height: 36px;
+}
+.form-modal select {
+  display: block;
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #dce0e5;
+  border-radius: 5px;
+  background: white;
+  color: var(--ink);
+  font: inherit;
+  margin-bottom: 16px;
+  min-height: 44px;
+}
+.form-modal input[type='checkbox'] {
+  width: 24px;
+  height: 24px;
+  min-height: 24px;
+}
+body:has(app-record-editor) {
+  overflow: hidden;
+}
+@media (max-width: 760px) {
+  .form-modal select {
+    font-size: 16px;
+  }
+}
+.page-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+.page-tools label {
+  display: grid;
+  gap: 8px;
+  font-weight: 600;
+}
+.page-tools input,
+.page-tools select {
+  border: 1px solid #dce0e5;
+  background: white;
+  color: var(--ink);
+  border-radius: 5px;
+  padding: 10px;
+  min-height: 44px;
+  font: inherit;
+}
+.page-tools > span {
+  padding-bottom: 12px;
+  color: var(--muted);
+}
+@media (max-width: 760px) {
+  .page-tools label {
+    width: 100%;
+  }
+  .page-tools input,
+  .page-tools select {
+    width: 100%;
+    font-size: 16px;
+  }
+}
+app-record-editor .form-modal footer {
+  position: sticky;
+  bottom: -25px;
+  background: white;
+  padding: 16px 0;
+  border-top: 1px solid var(--line);
+  box-shadow: 0 -8px 16px #ffffffee;
+}
+@media (max-width: 760px) {
+  app-record-editor .form-modal footer {
+    bottom: -18px;
+  }
+}

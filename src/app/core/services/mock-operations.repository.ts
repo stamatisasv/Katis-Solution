@@ -13,7 +13,12 @@ import {
   Transaction,
   Vehicle,
 } from '../models/entities';
-import { OperationsRepository } from './operations.repository';
+import {
+  EditableKind,
+  EditableRecords,
+  RecordChanges,
+  OperationsRepository,
+} from './operations.repository';
 export const mockId = (n: number): string =>
   `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
 const base = (n: number): BaseRecord => ({
@@ -299,15 +304,194 @@ export class MockOperationsRepository implements OperationsRepository {
       ...rows,
     ]);
   }
-  async completeTask(id: string): Promise<void> {
-    this.tasks.update((rows) =>
-      rows.map((task) =>
-        task.id === id
-          ? { ...task, status: 'completed', updated_at: new Date().toISOString() }
-          : task,
-      ),
+  async updateRecord<K extends EditableKind>(
+    kind: K,
+    id: string,
+    changes: RecordChanges<K>,
+  ): Promise<void> {
+    const stores = {
+      delivery: this.deliveries,
+      task: this.tasks,
+      product: this.products,
+      customer: this.customers,
+      transaction: this.transactions,
+      note: this.notes,
+      event: this.events,
+    };
+    const store = stores[kind];
+    const existing = store().find((row) => row.id === id);
+    if (!existing) throw new Error('Η εγγραφή δεν βρέθηκε.');
+    const allowed: Record<EditableKind, string[]> = {
+      delivery: [
+        'customer_id',
+        'address',
+        'scheduled_at',
+        'vehicle_id',
+        'driver_id',
+        'status',
+        'payment_status',
+        'fee',
+        'notes',
+      ],
+      task: ['title', 'description', 'category', 'priority', 'status', 'employee_id', 'due_date'],
+      product: ['name', 'quantity', 'minimum_stock', 'location', 'selling_price'],
+      customer: ['name', 'phone', 'email', 'address', 'vat_number', 'notes'],
+      transaction: ['description', 'status', 'payment_method'],
+      note: ['title', 'body', 'category', 'pinned'],
+      event: ['title', 'starts_at', 'ends_at', 'location'],
+    };
+    if (Object.keys(changes).some((key) => !allowed[kind].includes(key)))
+      throw new Error('Μη επιτρεπτή αλλαγή.');
+    const next = { ...existing, ...changes } as EditableRecords[K];
+    const record = next as unknown as Record<string, unknown>;
+    const required: Record<EditableKind, string[]> = {
+      delivery: ['address', 'scheduled_at'],
+      task: ['title', 'due_date'],
+      product: ['name', 'location'],
+      customer: ['name', 'address'],
+      transaction: ['description'],
+      note: ['title', 'category'],
+      event: ['title', 'starts_at', 'ends_at', 'location'],
+    };
+    for (const key of required[kind]) {
+      if (key in record && (typeof record[key] !== 'string' || !String(record[key]).trim()))
+        throw new Error('Συμπληρώστε τα υποχρεωτικά πεδία.');
+    }
+    for (const key of ['fee', 'quantity', 'minimum_stock', 'selling_price']) {
+      if (
+        key in record &&
+        (typeof record[key] !== 'number' ||
+          !Number.isFinite(record[key]) ||
+          Number(record[key]) < 0)
+      )
+        throw new Error('Το ποσό πρέπει να είναι μη αρνητικό.');
+    }
+    const choices: Record<string, readonly string[]> = {
+      'delivery.status': [
+        'scheduled',
+        'preparing',
+        'ready',
+        'in_transit',
+        'delivered',
+        'cancelled',
+      ],
+      'delivery.payment_status': ['pending', 'partial', 'paid'],
+      'task.status': ['todo', 'in_progress', 'waiting', 'completed', 'cancelled'],
+      'task.priority': ['low', 'normal', 'high', 'urgent'],
+      'transaction.status': ['pending', 'partial', 'paid', 'cancelled'],
+      'transaction.payment_method': ['cash', 'bank_transfer', 'card', 'other'],
+    };
+    for (const [key, value] of Object.entries(changes)) {
+      const values = choices[kind + '.' + key];
+      if (values && !values.includes(String(value))) throw new Error('Μη έγκυρη επιλογή.');
+    }
+    for (const key of ['scheduled_at', 'starts_at', 'ends_at', 'due_date']) {
+      if (key in record && !Number.isFinite(Date.parse(String(record[key]))))
+        throw new Error('Μη έγκυρη ημερομηνία.');
+    }
+    const relations = {
+      customer_id: this.customers(),
+      vehicle_id: this.vehicles(),
+      driver_id: this.profiles(),
+      employee_id: this.profiles(),
+    };
+    for (const [key, rows] of Object.entries(relations)) {
+      if (key in record && record[key] !== null && !rows.some((row) => row.id === record[key]))
+        throw new Error('Η σχετική εγγραφή δεν βρέθηκε.');
+    }
+    if (
+      kind === 'event' &&
+      Date.parse(String(record['ends_at'])) <= Date.parse(String(record['starts_at']))
+    )
+      throw new Error('Η λήξη πρέπει να είναι μετά την έναρξη.');
+    if (kind === 'event' && (existing as CalendarEvent).delivery_id)
+      throw new Error('Αλλάξτε την ώρα από την παράδοση.');
+    if (
+      kind === 'transaction' &&
+      (next as Transaction).delivery_id &&
+      (next as Transaction).status === 'cancelled'
+    )
+      throw new Error('Η συνδεδεμένη πληρωμή πρέπει να παραμείνει εκκρεμής, μερική ή εξοφλημένη.');
+    const now = new Date().toISOString();
+    // All validation precedes writes; related views observe the same operation.
+    const writable = store as import('@angular/core').WritableSignal<readonly EditableRecords[K][]>;
+    writable.update((rows) =>
+      rows.map((row) => (row.id === id ? { ...next, updated_at: now } : row)),
     );
-    this.log('ολοκλήρωσε μια εργασία', 'task', id);
+    if (kind === 'delivery') {
+      const d = next as Delivery;
+      const old = existing as Delivery;
+      if (
+        d.fee !== old.fee ||
+        d.customer_id !== old.customer_id ||
+        d.payment_status !== old.payment_status
+      ) {
+        this.transactions.update((rows) => {
+          if (rows.some((row) => row.delivery_id === id))
+            return rows.map((row) =>
+              row.delivery_id === id
+                ? {
+                    ...row,
+                    amount: d.fee,
+                    customer_id: d.customer_id,
+                    status: d.payment_status,
+                    updated_at: now,
+                  }
+                : row,
+            );
+          return [
+            {
+              ...base(0),
+              id: crypto.randomUUID(),
+              created_at: now,
+              updated_at: now,
+              type: 'income',
+              category: 'Παράδοση',
+              description: 'Πληρωμή παράδοσης #' + d.number,
+              amount: d.fee,
+              date: d.scheduled_at.slice(0, 10),
+              payment_method: 'cash',
+              status: d.payment_status,
+              customer_id: d.customer_id,
+              supplier_id: null,
+              delivery_id: id,
+            },
+            ...rows,
+          ];
+        });
+      }
+      const shift = Date.parse(d.scheduled_at) - Date.parse(old.scheduled_at);
+      this.events.update((rows) =>
+        rows.map((row) =>
+          row.delivery_id === id
+            ? {
+                ...row,
+                starts_at: d.scheduled_at,
+                ends_at: new Date(Date.parse(row.ends_at) + shift).toISOString(),
+                location:
+                  this.customers().find((c) => c.id === d.customer_id)?.name + ' · ' + d.address,
+                updated_at: now,
+              }
+            : row,
+        ),
+      );
+    }
+    if (kind === 'transaction') {
+      const t = next as Transaction;
+      const paymentStatus = t.status;
+      if (t.delivery_id && paymentStatus !== 'cancelled')
+        this.deliveries.update((rows) =>
+          rows.map((row) =>
+            row.id === t.delivery_id
+              ? { ...row, payment_status: paymentStatus, updated_at: now }
+              : row,
+          ),
+        );
+    }
+    this.log('ενημέρωσε μια εγγραφή', kind, id);
+  }
+  async completeTask(id: string): Promise<void> {
+    await this.updateRecord('task', id, { status: 'completed' });
   }
   async createTask(title: string, description: string, dueDate: string): Promise<void> {
     const record = {
