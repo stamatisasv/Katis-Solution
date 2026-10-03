@@ -1,0 +1,298 @@
+<section class="quick-actions dashboard-quick-actions" aria-label="Γρήγορες ενέργειες">
+  <div>
+    <h2>Γρήγορες ενέργειες</h2>
+    <p>Οι καθημερινές καταχωρίσεις, ένα κλικ μακριά.</p>
+  </div>
+  <button (click)="quick.open('task')">
+    <app-icon name="check" />Νέα εργασία<app-icon name="plus" /></button
+  ><a routerLink="/deliveries"><app-icon name="truck" />Νέα παράδοση<app-icon name="chevron" /></a
+  ><a routerLink="/stock-movements"
+    ><app-icon name="arrows" />Κίνηση αποθέματος<app-icon name="chevron" /></a
+  ><a routerLink="/finance"><app-icon name="wallet" />Νέα πληρωμή<app-icon name="chevron" /></a
+  ><button (click)="quick.open('note')">
+    <app-icon name="note" />Νέα σημείωση<app-icon name="plus" /></button
+  ><a routerLink="/customers"><app-icon name="users" />Νέος πελάτης<app-icon name="chevron" /></a>
+</section>
+
+<app-page-header
+  title="Καλημέρα, Σταμάτη"
+  subtitle="Όλα όσα χρειάζεται να γνωρίζεις για τη σημερινή ημέρα."
+  ><div class="date-chip"><app-icon name="calendar" /><span>Σάββατο, 3 Οκτωβρίου 2026</span></div>
+  <div class="popover-anchor">
+    <button
+      class="button primary"
+      (click)="newMenu.set(!newMenu())"
+      [attr.aria-expanded]="newMenu()"
+    >
+      <app-icon name="plus" />Νέα καταχώριση<app-icon name="down" />
+    </button>
+    @if (newMenu()) {
+      <div class="popover new-menu">
+        <button (click)="quick.open('task'); newMenu.set(false)">
+          <app-icon name="check" />Νέα εργασία</button
+        ><button (click)="quick.open('note'); newMenu.set(false)">
+          <app-icon name="note" />Νέα σημείωση</button
+        ><a routerLink="/deliveries" (click)="newMenu.set(false)"
+          ><app-icon name="truck" />Παραδόσεις <small>Επόμενη φάση</small></a
+        >
+      </div>
+    }
+  </div></app-page-header
+>
+<div class="day-strip">
+  <span class="online-dot"></span><strong>Η επιχείρηση σήμερα</strong
+  ><span>Μια καθαρή εικόνα. Καλύτερος συντονισμός.</span
+  ><span class="demo-label">Δοκιμαστικά δεδομένα</span>
+</div>
+<section class="stats-grid" aria-label="Σύνοψη ημέρας">
+  <app-stat-card
+    label="Σημερινές παραδόσεις"
+    [value]="ops.todayDeliveries().length.toString()"
+    icon="truck"
+    [detail]="
+      ops.deliveredToday().length +
+      ' ολοκληρωμένη · ' +
+      (ops.todayDeliveries().length - ops.deliveredToday().length) +
+      ' σε εξέλιξη'
+    "
+    link="/deliveries"
+    tone="green-text"
+  /><app-stat-card
+    label="Ανοιχτές εργασίες"
+    [value]="ops.openTasks().length.toString()"
+    icon="check"
+    [detail]="ops.overdueTasks().length + ' εκπρόθεσμες εργασίες'"
+    link="/tasks"
+    tone="red-text"
+  /><app-stat-card
+    label="Εκκρεμείς πληρωμές"
+    [value]="ops.pendingAmount().toLocaleString('el-GR')"
+    unit="€"
+    icon="wallet"
+    [detail]="ops.pendingPayments().length + ' πληρωμές προς είσπραξη'"
+    link="/finance"
+  /><app-stat-card
+    label="Χαμηλό απόθεμα"
+    [value]="ops.lowStock().length.toString()"
+    icon="box"
+    detail="Προϊόντα που χρειάζονται αναπλήρωση"
+    link="/inventory"
+    tone="amber-text"
+  />
+</section>
+<div class="dashboard-top-grid">
+  <section class="panel schedule-panel">
+    <header class="panel-header">
+      <h2><app-icon name="calendar" />Το πρόγραμμα της ημέρας</h2>
+      <a class="text-link" routerLink="/calendar">Ημερολόγιο<app-icon name="arrow" /></a>
+    </header>
+    <div class="schedule-list">
+      @for (event of ops.todayEvents(); track event.id) {
+        <a
+          class="schedule-row"
+          [routerLink]="event.delivery_id ? '/deliveries/' + event.delivery_id : '/calendar'"
+          ><time>{{ event.starts_at | date: 'HH:mm' : '+0300' }}</time
+          ><span class="timeline-marker" [class]="'timeline-marker ' + event.type"></span
+          ><span class="event-icon" [class]="'event-icon ' + event.type"
+            ><app-icon [name]="eventIcon(event.type)" /></span
+          ><span class="event-copy"
+            ><strong>{{ event.title }}</strong
+            ><small>{{ event.location }}</small></span
+          >
+          @if (event.type === 'delivery' && event.starts_at.includes('08:30')) {
+            <span class="badge blue">Σε διαδρομή</span>
+          }
+          <app-icon class="row-arrow" name="chevron"
+        /></a>
+      } @empty {
+        <p class="empty-message">Δεν υπάρχουν προγραμματισμένες δραστηριότητες.</p>
+      }
+    </div>
+    <div class="panel-foot">
+      <app-icon name="clock" />{{ ops.todayEvents().length }} δραστηριότητες σήμερα<span
+        >07:00 – 15:00</span
+      >
+    </div>
+  </section>
+  <section class="panel attention-panel">
+    <header class="panel-header">
+      <h2><span class="attention-dot"></span>Εργασίες που χρειάζονται προσοχή</h2>
+      <a class="text-link" routerLink="/tasks">Όλες<app-icon name="arrow" /></a>
+    </header>
+    <div class="task-list">
+      @for (task of ops.openTasks().slice(0, 4); track task.id) {
+        <div class="task-row">
+          <button
+            class="task-checkbox"
+            [disabled]="busyTask() === task.id"
+            [attr.aria-label]="'Ολοκλήρωση: ' + task.title"
+            (click)="complete(task.id)"
+          ></button
+          ><a routerLink="/tasks" class="task-copy"
+            ><strong>{{ task.title }}</strong
+            ><small
+              ><span [class.red-text]="task.due_date < '2026-10-03'">{{
+                task.due_date < '2026-10-03' ? 'Εκπρόθεσμη · Χθες' : 'Σήμερα'
+              }}</span
+              ><span>·</span>{{ ops.employee(task.employee_id).split(' ')[0] }}</small
+            ></a
+          ><app-status-badge [status]="task.priority" />
+        </div>
+      } @empty {
+        <p class="empty-message">Όλες οι εργασίες έχουν ολοκληρωθεί.</p>
+      }
+    </div>
+    @if (error()) {
+      <p class="error-text" role="alert">{{ error() }}</p>
+    }
+    <button class="add-task" (click)="quick.open('task')">
+      <app-icon name="plus" />Προσθήκη εργασίας
+    </button>
+  </section>
+</div>
+<section class="panel deliveries-panel">
+  <header class="panel-header">
+    <h2>
+      <app-icon name="truck" />Σημερινές παραδόσεις<span class="count-badge">{{
+        ops.todayDeliveries().length
+      }}</span>
+    </h2>
+    <a class="text-link" routerLink="/deliveries">Όλες οι παραδόσεις<app-icon name="arrow" /></a>
+  </header>
+  <div
+    class="table-scroll dashboard-delivery-table"
+    role="region"
+    aria-label="Σημερινές παραδόσεις"
+    tabindex="0"
+  >
+    <table>
+      <thead>
+        <tr>
+          <th>ΠΑΡΑΔΟΣΗ / ΠΕΛΑΤΗΣ</th>
+          <th>ΠΡΟΟΡΙΣΜΟΣ</th>
+          <th>ΩΡΑ</th>
+          <th>ΟΧΗΜΑ / ΟΔΗΓΟΣ</th>
+          <th>ΚΑΤΑΣΤΑΣΗ</th>
+          <th>ΠΛΗΡΩΜΗ</th>
+          <th><span class="sr-only">Λεπτομέρειες</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (delivery of ops.todayDeliveries(); track delivery.id) {
+          <tr>
+            <td>
+              <a class="delivery-name" [routerLink]="'/deliveries/' + delivery.id"
+                ><span class="record-number">#{{ delivery.number }}</span
+                ><strong>{{ ops.customer(delivery.customer_id) }}</strong></a
+              ><small class="table-subtext">{{ ops.items(delivery.id) }}</small>
+            </td>
+            <td>{{ delivery.address.split(',')[0] }}<small class="table-subtext">Λήμνος</small></td>
+            <td class="time-cell">{{ delivery.scheduled_at | date: 'HH:mm' : '+0300' }}</td>
+            <td>
+              {{ ops.vehicle(delivery.vehicle_id)
+              }}<small class="table-subtext">{{
+                ops.employee(delivery.driver_id).split(' ')[0]
+              }}</small>
+            </td>
+            <td><app-status-badge [status]="delivery.status" /></td>
+            <td><app-status-badge [status]="delivery.payment_status" /></td>
+            <td>
+              <a
+                class="icon-button"
+                [routerLink]="'/deliveries/' + delivery.id"
+                [attr.aria-label]="'Λεπτομέρειες παράδοσης ' + delivery.number"
+                ><app-icon name="chevron"
+              /></a>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+  <div class="mobile-delivery-list">
+    @for (delivery of ops.todayDeliveries(); track delivery.id) {
+      <a class="mobile-delivery-card" [routerLink]="'/deliveries/' + delivery.id">
+        <div class="mobile-delivery-heading">
+          <strong>#{{ delivery.number }}</strong
+          ><time>{{ delivery.scheduled_at | date: 'HH:mm' : '+0300' }}</time
+          ><app-icon name="chevron" />
+        </div>
+        <h3>{{ ops.customer(delivery.customer_id) }}</h3>
+        <p>{{ delivery.address }} · {{ ops.vehicle(delivery.vehicle_id) }}</p>
+        <p>{{ ops.items(delivery.id) }}</p>
+        <div class="mobile-delivery-status">
+          <app-status-badge [status]="delivery.status" /><app-status-badge
+            [status]="delivery.payment_status"
+          />
+        </div>
+      </a>
+    }
+  </div>
+</section>
+<div class="dashboard-bottom-grid">
+  <section class="panel stock-panel">
+    <header class="panel-header">
+      <h2><app-icon name="warning" />Χαμηλό απόθεμα</h2>
+      <a class="text-link" routerLink="/inventory">Απόθεμα<app-icon name="arrow" /></a>
+    </header>
+    @for (product of ops.lowStock(); track product.id) {
+      <a class="stock-row" routerLink="/inventory"
+        ><span class="stock-icon"><app-icon name="box" /></span>
+        <div>
+          <strong>{{ product.name }}</strong
+          ><small>Ελάχιστο: {{ product.minimum_stock }} {{ product.unit }}</small>
+        </div>
+        <span class="stock-quantity"
+          >{{ product.quantity }}<small>{{ product.unit }}</small></span
+        ></a
+      >
+    }
+    <div class="stock-warning">
+      <app-icon name="warning" />Προγραμματίστε την επόμενη παραγγελία.
+    </div>
+  </section>
+  <section class="panel activity-panel">
+    <header class="panel-header">
+      <h2><app-icon name="history" />Πρόσφατη δραστηριότητα</h2>
+      <a class="text-link" routerLink="/activity">Όλο το ιστορικό<app-icon name="arrow" /></a>
+    </header>
+    <div class="activity-list">
+      @for (activity of ops.repository.activities().slice(0, 4); track activity.id) {
+        <div class="activity-row">
+          <span class="mini-avatar">{{ ops.employee(activity.created_by).charAt(0) }}</span>
+          <div>
+            <p>
+              <strong>{{ ops.employee(activity.created_by).split(' ')[0] }}</strong>
+              {{ activity.action }}
+            </p>
+            <small
+              >{{ activity.created_at | date: 'HH:mm' : '+0300' }} ·
+              {{ activity.created_at | date: 'dd/MM' : '+0300' }}</small
+            >
+          </div>
+        </div>
+      }
+    </div>
+  </section>
+  <section class="panel notes-panel">
+    <header class="panel-header">
+      <h2><app-icon name="pin" />Καρφιτσωμένες σημειώσεις</h2>
+      <button class="icon-button" aria-label="Νέα σημείωση" (click)="quick.open('note')">
+        <app-icon name="plus" />
+      </button>
+    </header>
+    <div class="notes-list">
+      @for (note of ops.pinnedNotes().slice(0, 2); track note.id) {
+        <article class="pinned-note">
+          <span class="note-category">{{ note.category }}</span>
+          <h3>{{ note.title }}</h3>
+          <p>{{ note.body }}</p>
+          <small
+            >{{ ops.employee(note.created_by).split(' ')[0] }} ·
+            {{ note.created_at | date: 'dd/MM' : '+0300' }}</small
+          >
+        </article>
+      }
+    </div>
+  </section>
+</div>

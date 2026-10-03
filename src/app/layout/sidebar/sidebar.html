@@ -1,0 +1,58 @@
+<aside
+  #sidebarPanel
+  (keydown)="handleDrawerKeys($event)"
+  class="sidebar"
+  [class.drawer-open]="open()"
+  [class.collapsed]="collapsed()"
+  (mouseenter)="hoverChange.emit(true)"
+  (mouseleave)="hoverChange.emit(false)"
+  (pointerdown)="focusChange.emit(false)"
+  (keydown.tab)="focusChange.emit(true)"
+  (focusin)="handleFocusIn($event)"
+  (focusout)="handleFocusOut($event)"
+>
+  <button
+    class="icon-button drawer-close"
+    type="button"
+    aria-label="Κλείσιμο πλοήγησης"
+    (click)="close.emit()"
+  >
+    <app-icon name="close" />
+  </button>
+  <a class="brand" routerLink="/dashboard" (click)="close.emit()"
+    ><span class="brand-mark">K<span></span></span>
+    <div class="brand-copy">
+      <strong>KATIS<span> OPERATIONS</span></strong
+      ><small>{{ settings.subtitle }}</small>
+    </div></a
+  >
+  <nav aria-label="Κύρια πλοήγηση">
+    @for (group of groups; track group.label) {
+      <div class="nav-group">
+        <h2>{{ group.label }}</h2>
+        @for (item of group.items; track item.path) {
+          <a
+            [routerLink]="'/' + item.path"
+            routerLinkActive="active"
+            ariaCurrentWhenActive="page"
+            [title]="item.label"
+            (click)="close.emit()"
+            ><app-icon [name]="item.icon" /><span>{{ item.label }}</span>
+            @if (item.path === 'tasks') {
+              <small class="nav-count">{{ ops.openTasks().length }}</small>
+            }
+          </a>
+        }
+      </div>
+    }
+  </nav>
+  <div class="sidebar-bottom">
+    <a routerLink="/settings" routerLinkActive="active" (click)="close.emit()"
+      ><app-icon name="settings" /><span>Ρυθμίσεις</span></a
+    >
+    <div class="sidebar-demo">
+      <span class="online-dot"></span
+      ><span>Περιβάλλον επίδειξης<small>Τα δεδομένα είναι δοκιμαστικά</small></span>
+    </div>
+  </div>
+</aside>

@@ -1,0 +1,322 @@
+<app-page-header
+  [title]="title()"
+  eyebrow="ΧΩΡΟΣ ΕΡΓΑΣΙΑΣ"
+  subtitle="Προεπισκόπηση δεδομένων · Η πλήρης λειτουργία του module θα προστεθεί στην επόμενη φάση."
+>
+  @if (feature() === 'tasks') {
+    <button class="button primary" (click)="quick.open('task')">
+      <app-icon name="plus" />Νέα εργασία
+    </button>
+  }
+  @if (feature() === 'notes') {
+    <button class="button primary" (click)="quick.open('note')">
+      <app-icon name="plus" />Νέα σημείωση
+    </button>
+  }
+</app-page-header>
+@switch (feature()) {
+  @case ('tasks') {
+    <section class="panel">
+      <div class="table-scroll" role="region" [attr.aria-label]="title()" tabindex="0">
+        <table>
+          <thead>
+            <tr>
+              <th>ΕΡΓΑΣΙΑ</th>
+              <th>ΥΠΕΥΘΥΝΟΣ</th>
+              <th>ΠΡΟΘΕΣΜΙΑ</th>
+              <th>ΠΡΟΤΕΡΑΙΟΤΗΤΑ</th>
+              <th>ΚΑΤΑΣΤΑΣΗ</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (task of ops.repository.tasks(); track task.id) {
+              <tr>
+                <td>
+                  <strong>{{ task.title }}</strong
+                  ><small class="table-subtext">{{ task.category }}</small>
+                </td>
+                <td>{{ ops.employee(task.employee_id) }}</td>
+                <td>{{ task.due_date | date: 'dd/MM/yyyy' }}</td>
+                <td><app-status-badge [status]="task.priority" /></td>
+                <td><app-status-badge [status]="task.status" /></td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+  }
+  @case ('deliveries') {
+    <section class="panel">
+      <div class="table-scroll" role="region" [attr.aria-label]="title()" tabindex="0">
+        <table>
+          <thead>
+            <tr>
+              <th>ΠΑΡΑΔΟΣΗ</th>
+              <th>ΠΕΛΑΤΗΣ</th>
+              <th>ΠΡΟΟΡΙΣΜΟΣ</th>
+              <th>ΗΜΕΡΟΜΗΝΙΑ</th>
+              <th>ΚΑΤΑΣΤΑΣΗ</th>
+              <th>ΠΛΗΡΩΜΗ</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (d of ops.repository.deliveries(); track d.id) {
+              <tr>
+                <td>
+                  <a class="text-link" [routerLink]="'/deliveries/' + d.id"
+                    >#{{ d.number }}<app-icon name="arrow"
+                  /></a>
+                </td>
+                <td>{{ ops.customer(d.customer_id) }}</td>
+                <td>{{ d.address }}</td>
+                <td>{{ d.scheduled_at | date: 'dd/MM/yyyy HH:mm' : '+0300' }}</td>
+                <td><app-status-badge [status]="d.status" /></td>
+                <td><app-status-badge [status]="d.payment_status" /></td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+  }
+  @case ('delivery-detail') {
+    @if (delivery(); as d) {
+      <a class="text-link back-link" routerLink="/deliveries">← Πίσω στις παραδόσεις</a>
+      <section class="panel detail-panel">
+        <header class="panel-header">
+          <h2>Παράδοση #{{ d.number }}</h2>
+          <app-status-badge [status]="d.status" />
+        </header>
+        <dl>
+          <div>
+            <dt>Πελάτης</dt>
+            <dd>{{ ops.customer(d.customer_id) }}</dd>
+          </div>
+          <div>
+            <dt>Τοποθεσία</dt>
+            <dd>{{ d.address }}</dd>
+          </div>
+          <div>
+            <dt>Προγραμματισμένη άφιξη</dt>
+            <dd>{{ d.scheduled_at | date: 'dd/MM/yyyy HH:mm' : '+0300' }}</dd>
+          </div>
+          <div>
+            <dt>Όχημα / Οδηγός</dt>
+            <dd>{{ ops.vehicle(d.vehicle_id) }} · {{ ops.employee(d.driver_id) }}</dd>
+          </div>
+          <div>
+            <dt>Υλικά</dt>
+            <dd>{{ ops.items(d.id) }}</dd>
+          </div>
+          <div>
+            <dt>Αξία</dt>
+            <dd>{{ d.fee | currency: 'EUR' : 'symbol' : '1.2-2' : 'el' }}</dd>
+          </div>
+          <div>
+            <dt>Πληρωμή</dt>
+            <dd><app-status-badge [status]="d.payment_status" /></dd>
+          </div>
+          <div>
+            <dt>Σημειώσεις</dt>
+            <dd>{{ d.notes }}</dd>
+          </div>
+        </dl>
+      </section>
+    } @else {
+      <div class="panel empty-state">
+        <h2>Η παράδοση δεν βρέθηκε</h2>
+        <a class="button secondary" routerLink="/deliveries">Λίστα παραδόσεων</a>
+      </div>
+    }
+  }
+  @case ('inventory') {
+    <section class="panel">
+      <div class="table-scroll" role="region" [attr.aria-label]="title()" tabindex="0">
+        <table>
+          <thead>
+            <tr>
+              <th>ΚΩΔΙΚΟΣ</th>
+              <th>ΠΡΟΪΟΝ</th>
+              <th>ΚΑΤΗΓΟΡΙΑ</th>
+              <th>ΑΠΟΘΕΜΑ</th>
+              <th>ΕΛΑΧΙΣΤΟ</th>
+              <th>ΚΑΤΑΣΤΑΣΗ</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (p of ops.repository.products(); track p.id) {
+              <tr>
+                <td>{{ p.sku }}</td>
+                <td>
+                  <strong>{{ p.name }}</strong
+                  ><small class="table-subtext">{{ p.location }}</small>
+                </td>
+                <td>{{ p.category }}</td>
+                <td>{{ p.quantity }} {{ p.unit }}</td>
+                <td>{{ p.minimum_stock }}</td>
+                <td>
+                  <span
+                    class="badge"
+                    [class.amber]="p.quantity <= p.minimum_stock"
+                    [class.green]="p.quantity > p.minimum_stock"
+                    >{{
+                      p.quantity === 0
+                        ? 'Εξαντλήθηκε'
+                        : p.quantity <= p.minimum_stock
+                          ? 'Χαμηλό απόθεμα'
+                          : 'Σε απόθεμα'
+                    }}</span
+                  >
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+  }
+  @case ('calendar') {
+    <section class="panel">
+      <header class="panel-header">
+        <h2>Σάββατο, 3 Οκτωβρίου 2026</h2>
+        <span class="badge amber">Ημερήσια προεπισκόπηση</span>
+      </header>
+      @for (event of ops.todayEvents(); track event.id) {
+        <div class="calendar-preview-row">
+          <time
+            >{{ event.starts_at | date: 'HH:mm' : '+0300' }} –
+            {{ event.ends_at | date: 'HH:mm' : '+0300' }}</time
+          >
+          <div>
+            <h3>{{ event.title }}</h3>
+            <p class="muted">{{ event.location }}</p>
+          </div>
+          @if (event.delivery_id) {
+            <a class="text-link" [routerLink]="'/deliveries/' + event.delivery_id"
+              >Λεπτομέρειες<app-icon name="arrow"
+            /></a>
+          }
+        </div>
+      }
+    </section>
+  }
+  @case ('customers') {
+    <section class="panel">
+      <div class="table-scroll" role="region" [attr.aria-label]="title()" tabindex="0">
+        <table>
+          <thead>
+            <tr>
+              <th>ΠΕΛΑΤΗΣ</th>
+              <th>ΤΗΛΕΦΩΝΟ</th>
+              <th>ΠΕΡΙΟΧΗ</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (c of ops.repository.customers(); track c.id) {
+              <tr>
+                <td>
+                  <strong>{{ c.name }}</strong>
+                </td>
+                <td>{{ c.phone }}</td>
+                <td>{{ c.address }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+  }
+  @case ('finance') {
+    <p class="notice">
+      Εσωτερική παρακολούθηση χρημάτων · Τα ποσά δεν αποτελούν επίσημες λογιστικές καταστάσεις.
+    </p>
+    <section class="panel">
+      <div class="table-scroll" role="region" [attr.aria-label]="title()" tabindex="0">
+        <table>
+          <thead>
+            <tr>
+              <th>ΠΕΡΙΓΡΑΦΗ</th>
+              <th>ΠΕΛΑΤΗΣ</th>
+              <th>ΠΟΣΟ</th>
+              <th>ΚΑΤΑΣΤΑΣΗ</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (t of ops.repository.transactions(); track t.id) {
+              <tr>
+                <td>{{ t.description }}</td>
+                <td>{{ t.customer_id ? ops.customer(t.customer_id) : '—' }}</td>
+                <td>{{ t.amount | currency: 'EUR' : 'symbol' : '1.2-2' : 'el' }}</td>
+                <td><app-status-badge [status]="t.status" /></td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+  }
+  @case ('notes') {
+    <div class="notes-grid">
+      @for (n of ops.repository.notes(); track n.id) {
+        <article class="panel pinned-note">
+          <span class="note-category">{{ n.category }}</span>
+          <h2>{{ n.title }}</h2>
+          <p>{{ n.body }}</p>
+          <small>{{ ops.employee(n.created_by) }}</small>
+        </article>
+      }
+    </div>
+  }
+  @case ('activity') {
+    <section class="panel activity-list">
+      @for (a of ops.repository.activities(); track a.id) {
+        <div class="activity-row">
+          <span class="mini-avatar">{{ ops.employee(a.created_by).charAt(0) }}</span>
+          <div>
+            <p>
+              <strong>{{ ops.employee(a.created_by) }}</strong> {{ a.action }}
+            </p>
+            <small>{{ a.created_at | date: 'dd/MM/yyyy HH:mm' : '+0300' }}</small>
+          </div>
+        </div>
+      }
+    </section>
+  }
+  @case ('settings') {
+    <section class="panel detail-panel">
+      <header class="panel-header"><h2>Ρυθμίσεις περιβάλλοντος</h2></header>
+      <dl>
+        <div>
+          <dt>Εφαρμογή</dt>
+          <dd>Katis Operations</dd>
+        </div>
+        <div>
+          <dt>Γλώσσα</dt>
+          <dd>Ελληνικά</dd>
+        </div>
+        <div>
+          <dt>Δεδομένα</dt>
+          <dd>Δοκιμαστικό repository στη μνήμη</dd>
+        </div>
+        <div>
+          <dt>Χρήστες & δικαιώματα</dt>
+          <dd>Θα ενεργοποιηθούν με Supabase Auth και RLS.</dd>
+        </div>
+      </dl>
+    </section>
+  }
+  @default {
+    <section class="panel empty-state">
+      <span class="empty-icon"><app-icon name="box" /></span>
+      <h2>Ο χώρος είναι έτοιμος για την επόμενη φάση</h2>
+      <p>
+        Η διαχείριση {{ title().toLocaleLowerCase('el') }} θα προστεθεί σταδιακά.<br />Προς το
+        παρόν, δεν υπάρχει δυνατότητα καταχώρισης σε αυτό το module.
+      </p>
+      <a class="button secondary" routerLink="/dashboard"
+        >Επιστροφή στην αρχική<app-icon name="arrow"
+      /></a>
+    </section>
+  }
+}

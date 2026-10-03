@@ -1,0 +1,61 @@
+<div class="modal-overlay" (click)="closed.emit()">
+  <section
+    class="form-modal"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="modal-title"
+    (click)="$event.stopPropagation()"
+    (keydown)="trapFocus($event)"
+  >
+    <header>
+      <div>
+        <span class="eyebrow">ΓΡΗΓΟΡΗ ΚΑΤΑΧΩΡΙΣΗ</span>
+        <h2 id="modal-title">{{ kind() === 'task' ? 'Νέα εργασία' : 'Νέα σημείωση' }}</h2>
+      </div>
+      <button type="button" class="icon-button" aria-label="Κλείσιμο" (click)="closed.emit()">
+        <app-icon name="close" />
+      </button>
+    </header>
+    <form [formGroup]="form" (ngSubmit)="submit()">
+      <label for="record-title">Τίτλος *</label
+      ><input
+        #titleField
+        id="record-title"
+        formControlName="title"
+        placeholder="Τι χρειάζεται να γίνει;"
+        maxlength="160"
+        [attr.aria-invalid]="submitted() && form.controls.title.invalid"
+        aria-describedby="title-error"
+      />
+      @if (submitted() && form.controls.title.invalid) {
+        <small id="title-error" class="error-text"
+          >Συμπληρώστε έναν τίτλο με τουλάχιστον 3 χαρακτήρες.</small
+        >
+      }
+      <label for="record-description">{{ kind() === 'task' ? 'Περιγραφή' : 'Σημείωση' }}</label
+      ><textarea
+        id="record-description"
+        formControlName="description"
+        rows="4"
+        placeholder="Προσθέστε χρήσιμες λεπτομέρειες…"
+      ></textarea>
+      @if (kind() === 'task') {
+        <label for="record-date">Προθεσμία *</label
+        ><input id="record-date" type="date" formControlName="dueDate" />
+        @if (submitted() && form.controls.dueDate.invalid) {
+          <small class="error-text">Επιλέξτε προθεσμία.</small>
+        }
+      }
+      <p class="muted small">Δοκιμαστική καταχώριση · Διατηρείται μόνο στην τρέχουσα συνεδρία.</p>
+      @if (error()) {
+        <p role="alert" class="error-text">{{ error() }}</p>
+      }
+      <footer>
+        <button type="button" class="button secondary" (click)="closed.emit()">Ακύρωση</button
+        ><button class="button primary" type="submit" [disabled]="busy()">
+          {{ busy() ? 'Αποθήκευση…' : 'Αποθήκευση' }}
+        </button>
+      </footer>
+    </form>
+  </section>
+</div>

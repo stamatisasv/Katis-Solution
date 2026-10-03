@@ -1,0 +1,103 @@
+<header class="topbar">
+  <button class="icon-button mobile-menu" aria-label="Άνοιγμα πλοήγησης" (click)="menu.emit()">
+    <app-icon name="menu" />
+  </button>
+  <div class="breadcrumb">Χώρος εργασίας <app-icon name="chevron" /><strong>Katis</strong></div>
+  <div class="global-search">
+    <app-icon name="search" /><input
+      type="search"
+      aria-label="Αναζήτηση σε πελάτες, παραδόσεις, εργασίες και προϊόντα"
+      placeholder="Αναζήτηση σε όλη την εφαρμογή…"
+      [value]="query()"
+      (input)="query.set(searchValue($event))"
+    /><kbd>Αναζήτηση</kbd>
+    @if (query().trim().length >= 2) {
+      <div class="search-results">
+        @for (result of results(); track result.title) {
+          <a [routerLink]="result.route" (click)="query.set('')"
+            ><small>{{ result.type }}</small
+            ><span>{{ result.title }}</span
+            ><app-icon name="chevron"
+          /></a>
+        } @empty {
+          <p>Δεν βρέθηκαν αποτελέσματα για «{{ query() }}».</p>
+        }
+      </div>
+    }
+  </div>
+  <div class="topbar-actions">
+    <div class="popover-anchor">
+      <button
+        class="icon-button global-create"
+        aria-label="Νέα καταχώριση"
+        [attr.aria-expanded]="newMenu()"
+        (click)="newMenu.set(!newMenu()); notifications.set(false); profile.set(false)"
+      >
+        <app-icon name="plus" />
+      </button>
+      @if (newMenu()) {
+        <div class="popover">
+          <h3>Νέα καταχώριση</h3>
+          <button (click)="create.emit('task'); newMenu.set(false)">
+            <app-icon name="check" />Νέα εργασία</button
+          ><button (click)="create.emit('note'); newMenu.set(false)">
+            <app-icon name="note" />Νέα σημείωση
+          </button>
+        </div>
+      }
+    </div>
+    <div class="popover-anchor">
+      <button
+        class="icon-button notification-trigger"
+        aria-label="Ειδοποιήσεις"
+        [attr.aria-expanded]="notifications()"
+        (click)="notifications.set(!notifications()); newMenu.set(false); profile.set(false)"
+      >
+        <app-icon name="bell" /><span></span>
+      </button>
+      @if (notifications()) {
+        <section class="popover notification-panel">
+          <h3>Χρειάζονται την προσοχή σας</h3>
+          <a routerLink="/deliveries" (click)="dismiss()"
+            ><app-icon name="truck" /><span
+              >Η παράδοση #1042 είναι σε διαδρομή<small>Μύρινα · Φορτηγό 02</small></span
+            ></a
+          ><a routerLink="/inventory" (click)="dismiss()"
+            ><app-icon name="warning" /><span
+              >{{ ops.lowStock().length }} προϊόντα σε χαμηλό απόθεμα<small
+                >Ελέγξτε τις ανάγκες παραγγελίας</small
+              ></span
+            ></a
+          ><a routerLink="/finance" (click)="dismiss()"
+            ><app-icon name="wallet" /><span
+              >{{ ops.pendingPayments().length }} εκκρεμείς πληρωμές<small
+                >Αναμένονται {{ ops.pendingAmount() }} €</small
+              ></span
+            ></a
+          >
+        </section>
+      }
+    </div>
+    <span class="topbar-divider"></span>
+    <div class="popover-anchor">
+      <button
+        class="user-button"
+        (click)="profile.set(!profile()); notifications.set(false); newMenu.set(false)"
+        [attr.aria-expanded]="profile()"
+      >
+        <span class="avatar">ΣΚ</span
+        ><span class="user-copy"><strong>Σταμάτης Κατής</strong><small>Διαχειριστής</small></span
+        ><app-icon name="down" />
+      </button>
+      @if (profile()) {
+        <div class="popover">
+          <h3>Δοκιμαστικό προφίλ</h3>
+          <p class="muted small">Η σύνδεση χρηστών θα προστεθεί με το Supabase Auth.</p>
+          <a routerLink="/settings" (click)="dismiss()"
+            >Ρυθμίσεις εφαρμογής <app-icon name="settings"
+          /></a>
+        </div>
+      }
+    </div>
+  </div>
+</header>

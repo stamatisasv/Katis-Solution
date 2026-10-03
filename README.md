@@ -1,59 +1,20 @@
-# KatisSolution
+# Katis Operations
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 22.1.5.
+Greek internal business operations prototype for Κατής Δημήτριος & Σία Ο.Ε., Lemnos. Built with Angular 22.2.1, standalone components, signals and Reactive Forms.
 
-## Development server
+## Run
 
-To start a local development server, run:
-
-```bash
-ng serve
+```sh
+npm install
+npm start
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+Open http://localhost:4200 on this computer. The dev server listens on `0.0.0.0`; other devices on the same network can open `http://<your-computer-LAN-IP>:4200`. Verify with `npm run build` and `npm test -- --watch=false`.
 
-## Code scaffolding
+## First phase
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+Complete responsive dashboard and application shell, all 13 navigation destinations, cross-entity search, notification panel, expandable desktop sidebar, mobile drawer, session-only task/note creation and task completion. Read-only previews cover tasks, deliveries and UUID delivery details, inventory, daily schedule, customers, finance, notes and activity. Remaining destinations clearly show their preparation state.
 
-```bash
-ng generate component component-name
-```
+The seed day is **3 October 2026**. All contacts and operational records are fictional. Mock mutations live only in memory and reset on refresh. Supabase, authentication and realtime are intentionally not connected. This is a frontend prototype, not a secured production ERP.
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
-
-```bash
-ng generate --help
-```
-
-## Building
-
-To build the project run:
-
-```bash
-ng build
-```
-
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+See [frontend architecture](docs/ARCHITECTURE.md) and [database planning](docs/DATABASE-PLAN.md) for boundaries, limitations and the next implementation phases.
